@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block body %}
+	<div class="container">
+		<h1>Register</h1>
+		<div class="col">
+			<form action="{{url_for('adduser')}}" method="post">
+				<div class="form-group">
+					<label for="username">Username</label>
+					<input class="form-control" type="text" name="username" placeholder="myUserName" required>
+				</div>
+				<div class="form-group">
+					<label name="name">Name</label>
+					<input class="form-control" type="text" name="name" placeholder="John Doe" required>
+				</div>
+				<div class="form-group">
+					<label for="password">Password</label>
+					<input class="form-control" type="password" name="password" required>
+				</div>
+				<div class="form-group">
+					<label for="confirm-password">Confirm Password</label>
+					<input class="form-control" type="password" name="confirm-password" required>
+				</div>
+				{% if invalid %}
+				<div class="alert alert-danger">
+					<ol>
+						{% for error in invalid %}
+						<li>{{ error }}</li>
+						{% endfor %}
+					</ol>
+				</div>
+				{% endif %}
+				<button class="btn btn-primary">Submit</button>
+			</form>
+			<p><a href="{{ url_for('index')}}">Back to login</a>
+		</div>
+	</div>
+{% endblock %}

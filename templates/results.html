@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block body%}
+
+<div class="container">
+	<h1 class="text-center">Search Results</h1>
+	<p><a href="{{url_for('search')}}">Back to search</a></p>
+	{% if books %}
+		{% for book in books %}
+			<div class="row border m-3">
+				<div class="col">
+					<ul class="list-group list-group-flush">
+						<li class="list-group-item">ISBN: {{book['isbn']}}</li>
+						<li class="list-group-item">Title: {{book['title']}}</li>
+						<li class="list-group-item">Author: {{book['author']}}</li>
+					</ul>
+				</div>
+			</div>
+		{% endfor %}
+	{% else %}
+		<p>No matching results.</p>
+	{% endif %}
+</div>
+{% endblock %}

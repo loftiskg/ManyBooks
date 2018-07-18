@@ -1,0 +1,16 @@
+
+{% extends "layout.html" %}
+{% block body %}
+	<div class="container-fluid">
+		<div class="col-12 text-center">
+			<h1 class="text-center display-1">Welcome to ManyBooks!
+			</h1>
+			{% if session['username']%}
+			<p>You are logged in as {{session['username']}}</p>
+			{% else %}
+			<p>Log in or Register</p>
+			{% endif %}
+		</div>
+	</div>
+{% endblock %}
+
