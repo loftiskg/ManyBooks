@@ -1,5 +1,5 @@
 import os
-
+import json
 from flask import Flask, session, render_template,request,url_for, redirect
 from flask_session import Session
 from sqlalchemy import create_engine
@@ -45,9 +45,8 @@ def result():
     books = []
     for row in result:
         books.append(row)
-
     result.close()
-    
+    #TODO add goodreads data
     return render_template('results.html',books=books)
 
 @app.route("/login")
@@ -57,6 +56,22 @@ def login():
 def logout():
     session['username'] = None
     return redirect(url_for('index'))
+
+@app.route('/api/<string:isbn>')
+def getBook(isbn):
+    result = db.execute("SELECT title,author,year_,isbn FROM books WHERE isbn = :isbn",
+                            {"isbn":isbn})
+    data = result.fetchone()
+    if data is None:
+        data = {}
+    data = {"title":data[0],
+            "author":data[1],
+            "year":data[2],
+            "isbn":data[3]}
+    #TODO: add goodreads data
+    return json.dumps(data)
+
+
 
 @app.route("/verify", methods=["POST"])
 def verify():
