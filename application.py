@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from flask import Flask, session, render_template,request,url_for, redirect
 from flask_session import Session
 from sqlalchemy import create_engine
@@ -7,8 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 app = Flask(__name__)
 
-# Goodreads API key
-#KEY = AWLYBKmWHJB0UpYwRoHEw
+
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
@@ -40,12 +40,8 @@ def result():
     search_type = request.form.get('search-type')
     search_input = request.form.get('search')
 
-    result = db.execute(f"SELECT * FROM books WHERE LOWER({search_type}) LIKE LOWER(:input)",
-                             {'column':search_type,'input':'%'+search_input+'%'})
-    books = []
-    for row in result:
-        books.append(row)
-    result.close()
+    books = db.execute(f"SELECT * FROM books WHERE LOWER({search_type}) LIKE LOWER(:input)",
+                             {'column':search_type,'input':'%'+search_input+'%'}).fetchall()
     #TODO add goodreads data
     return render_template('results.html',books=books)
 
@@ -56,14 +52,18 @@ def book(id):
     book = result.fetchone()
     user_review_exists = reviewExists(session['user_id'],id)
     reviews = getReviews(id)
-    return render_template('book.html',book=book,reviews=reviews, user_review_exists=user_review_exists)
+    goodreadsData = getGoodreadsRating(book['isbn'])
+    if goodreadsData is None:
+        goodreadsData = {'average_rating':'Not found','num_ratings':'Not found'}
+    return render_template('book.html',book=book,
+                                       reviews=reviews, 
+                                       user_review_exists=user_review_exists,
+                                       rating=goodreadsData['average_rating'],
+                                       num_ratings=goodreadsData['work_ratings_count'])
 
 def getReviews(book_id):
-    results = db.execute("SELECT * FROM review JOIN users ON (review.user_id=users.id) WHERE book_id = :book_id",
-        {'book_id':book_id})
-    reviews = []
-    for i in results:
-        reviews.append(i)
+    reviews = db.execute("SELECT * FROM review JOIN users ON (review.user_id=users.id) WHERE book_id = :book_id",
+        {'book_id':book_id}).fetchall()
     return reviews
 
 @app.route("/login")
@@ -76,15 +76,10 @@ def logout():
 
 @app.route('/api/<string:isbn>')
 def getBook(isbn):
-    result = db.execute("SELECT title,author,year_,isbn FROM books WHERE isbn = :isbn",
-                            {"isbn":isbn})
-    data = result.fetchone()
+    data = db.execute("SELECT title,author,year_,isbn FROM books WHERE isbn = :isbn",
+                            {"isbn":isbn}).fetchone()
     if data is None:
         data = {}
-    data = {"title":data[0],
-            "author":data[1],
-            "year":data[2],
-            "isbn":data[3]}
     return json.dumps(data)
 
 @app.route("/addReview/<int:id>", methods=["POST"])
@@ -98,9 +93,8 @@ def addReview(id):
     return redirect(url_for('book',id=id))
 
 def reviewExists(user_id,book_id):
-    result = db.execute("SELECT * FROM review WHERE user_id=:user_id AND book_id=:book_id",
-        {'user_id':user_id,'book_id':book_id})
-    row = result.fetchone()
+    row = db.execute("SELECT * FROM review WHERE user_id=:user_id AND book_id=:book_id",
+        {'user_id':user_id,'book_id':book_id}).fetchone()
     if row:
         return True
     return False
@@ -144,4 +138,12 @@ def adduser():
         {'username':username,'password':password,'name':name})
     db.commit()
     return redirect(url_for('login'))
+
+
+def getGoodreadsRating(isbn):
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": 'AWLYBKmWHJB0UpYwRoHEw', "isbns": isbn})
+    if res.status_code != 200:
+        return None
+    
+    return res.json()['books'][0]
 
