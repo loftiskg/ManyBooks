@@ -49,6 +49,23 @@ def result():
     #TODO add goodreads data
     return render_template('results.html',books=books)
 
+@app.route('/book/<int:id>')
+def book(id):
+    result = db.execute(f"SELECT * from books WHERE id=:id",
+        {'id':id})
+    book = result.fetchone()
+    user_review_exists = reviewExists(session['user_id'],id)
+    reviews = getReviews(id)
+    return render_template('book.html',book=book,reviews=reviews, user_review_exists=user_review_exists)
+
+def getReviews(book_id):
+    results = db.execute("SELECT * FROM review JOIN users ON (review.user_id=users.id) WHERE book_id = :book_id",
+        {'book_id':book_id})
+    reviews = []
+    for i in results:
+        reviews.append(i)
+    return reviews
+
 @app.route("/login")
 def login():
 	return render_template("login.html")
@@ -68,10 +85,25 @@ def getBook(isbn):
             "author":data[1],
             "year":data[2],
             "isbn":data[3]}
-    #TODO: add goodreads data
     return json.dumps(data)
 
+@app.route("/addReview/<int:id>", methods=["POST"])
+def addReview(id):
+    review = request.form.get("review")
+    rating = request.form.get('rating')
 
+    db.execute("INSERT INTO review(book_id,user_id,rating,comment_) VALUES (:book_id,:user_id,:rating,:comment)",
+        {'book_id':id,'user_id':session['user_id'],'rating':rating,'comment':review})
+    db.commit()
+    return redirect(url_for('book',id=id))
+
+def reviewExists(user_id,book_id):
+    result = db.execute("SELECT * FROM review WHERE user_id=:user_id AND book_id=:book_id",
+        {'user_id':user_id,'book_id':book_id})
+    row = result.fetchone()
+    if row:
+        return True
+    return False
 
 @app.route("/verify", methods=["POST"])
 def verify():
