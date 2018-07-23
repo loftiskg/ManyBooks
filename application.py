@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from flask import Flask, session, render_template,request,url_for, redirect
+from flask import Flask, session, render_template,request,url_for, redirect, jsonify
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -79,8 +79,10 @@ def getBook(isbn):
     data = db.execute("SELECT title,author,year_,isbn FROM books WHERE isbn = :isbn",
                             {"isbn":isbn}).fetchone()
     if data is None:
-        data = {}
-    return json.dumps(data)
+        data = {'error':'invalid isbn'}
+        return jsonify(data), 404
+    data = {'title':data[0],'author':data[1],'year_published':data[2],'isbn':data[3]}
+    return jsonify(data)
 
 @app.route("/addReview/<int:id>", methods=["POST"])
 def addReview(id):
@@ -144,6 +146,5 @@ def getGoodreadsRating(isbn):
     res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": 'AWLYBKmWHJB0UpYwRoHEw', "isbns": isbn})
     if res.status_code != 200:
         return None
-    
     return res.json()['books'][0]
 
