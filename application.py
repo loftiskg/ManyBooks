@@ -26,7 +26,7 @@ db = scoped_session(sessionmaker(bind=engine))
 
 @app.route("/")
 def index():
-    if session['username'] == None:
+    if session.get('username',None) == None:
         return render_template('index.html')
     else:
         return redirect(url_for('search'))
