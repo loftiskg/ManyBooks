@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import requests
 from flask import Flask, session, render_template,request,url_for, redirect, jsonify
@@ -42,7 +43,6 @@ def result():
 
     books = db.execute(f"SELECT * FROM books WHERE LOWER({search_type}) LIKE LOWER(:input)",
                              {'column':search_type,'input':'%'+search_input+'%'}).fetchall()
-    #TODO add goodreads data
     return render_template('results.html',books=books)
 
 @app.route('/book/<int:id>')
@@ -143,8 +143,12 @@ def adduser():
 
 
 def getGoodreadsRating(isbn):
-    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": 'AWLYBKmWHJB0UpYwRoHEw', "isbns": isbn})
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", 
+                       params={"key": GOODREADS_API_KEY, "isbns": isbn})
     if res.status_code != 200:
         return None
     return res.json()['books'][0]
+
+GOODREADS_API_KEY = sys.argv[1]
+app.run()
 
