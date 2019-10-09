@@ -54,7 +54,7 @@ def book(id):
     reviews = getReviews(id)
     goodreadsData = getGoodreadsRating(book['isbn'])
     if goodreadsData is None:
-        goodreadsData = {'average_rating':'Not found','num_ratings':'Not found'}
+        goodreadsData = {'average_rating':'Not found','num_ratings':'Not found','work_ratings_count':'Not found'}
     return render_template('book.html',book=book,
                                        reviews=reviews, 
                                        user_review_exists=user_review_exists,
@@ -150,5 +150,5 @@ def getGoodreadsRating(isbn):
     return res.json()['books'][0]
 
 GOODREADS_API_KEY = sys.argv[1]
-app.run()
+app.run('0.0.0.0',port=5000)
 
